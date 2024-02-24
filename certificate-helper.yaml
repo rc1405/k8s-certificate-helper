@@ -150,7 +150,7 @@ subjects:
 apiVersion: webhook-helper.io/v1
 kind: WebhookHelper
 metadata:
-  name: certificate-signing-webhook
+  name: certificate-helper
 spec: 
   namespace: certificate-helper
   listening_port: 8443
@@ -160,7 +160,7 @@ spec:
     metadata:
       name: certificate-helper
     webhooks:
-      - name: certificate-helper.certificate-helper.svc
+      - name: certificate-helper
         rules:
           - operations: ["CREATE", "UPDATE", "DELETE"]
             apiGroups: ["certificate-helper.io"]
@@ -171,17 +171,28 @@ spec:
         sideEffects: None
         timeoutSeconds: 5
   deployment:
-    apiVersion: v1
-    kind: Pod
+    apiVersion: apps/v1
+    kind: Deployment
     metadata:
       name: certificate-helper
       namespace: certificate-helper
+      labels:
+        app: certificate-helper
     spec:
-      containers:
-        - name: bootstrap
-          image: rc1405/k8s-certificate-helper:latest
-          args: ["run", "-p", "8443"]
-          ports: 
-            - containerPort: 8443
-      restartPolicy: Never
-      serviceAccountName: certificate-helper-service-account
+      replicas: 1
+      selector:
+        matchLabels:
+          app: certificate-helper
+      template:
+        metadata:
+          labels:
+            app: certificate-helper
+        spec:
+          serviceAccountName: certificate-helper-service-account
+          containers:
+            - name: bootstrap
+              image: rc1405/k8s-certificate-helper:latest
+              args: ["run", "-p", "8443"]
+              imagePullPolicy: Never
+              ports: 
+                - containerPort: 8443

@@ -14,7 +14,7 @@ use crate::crd::Certificate;
 pub async fn serve(port: u16) -> Result<(), Error> {
     let client = Client::try_default().await?;
 
-    let routes = warp::path("validate")
+    let routes = warp::any()
         .and(warp::post())
         .and(warp::body::json())
         .and_then(move |body: AdmissionReview<DynamicObject>| handler(client.clone(), body))
@@ -22,8 +22,8 @@ pub async fn serve(port: u16) -> Result<(), Error> {
 
     warp::serve(warp::post().and(routes))
         .tls()
-        .cert_path("/certificate-helper/tls.crt")
-        .key_path("/certificate-helper/tls.key")
+        .cert_path("/webhook-helper/tls.crt")
+        .key_path("/webhook-helper/tls.key")
         .run(([0, 0, 0, 0], port))
         .await;
 
