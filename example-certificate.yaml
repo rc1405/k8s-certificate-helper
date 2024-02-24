@@ -1,0 +1,16 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: my-example-namespace
+---
+apiVersion: certificate-helper.io/v1
+kind: Certificate
+metadata:
+  name: my-certificate
+spec: 
+  namespace: my-example-namespace
+  service: my-service
+  alt_names:
+    - db.my-service
+    - api.my-service

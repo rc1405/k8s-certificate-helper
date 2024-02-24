@@ -22,8 +22,8 @@ pub async fn serve(port: u16) -> Result<(), Error> {
 
     warp::serve(warp::post().and(routes))
         .tls()
-        .cert_path("/webhook-helper/tls.crt")
-        .key_path("/webhook-helper/tls.key")
+        .cert_path("/certificate-helper/tls.crt")
+        .key_path("/certificate-helper/tls.key")
         .run(([0, 0, 0, 0], port))
         .await;
 

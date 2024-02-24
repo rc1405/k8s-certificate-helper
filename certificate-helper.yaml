@@ -4,6 +4,67 @@ kind: Namespace
 metadata:
   name: certificate-helper
 ---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: certificates.certificate-helper.io
+spec:
+ group: certificate-helper.io
+ names:
+   plural: certificates
+   singular: certificate
+   kind: Certificate
+   shortNames:
+   - cert
+   - crt
+ scope: Cluster
+ versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                namespace:
+                  type: string
+                service:
+                  type: string
+                alt_names:
+                  type: array
+                  items:
+                    type: string
+              required: ["namespace", "service"]
+            status:
+              type: object
+              properties:
+                certificate: 
+                  type: string
+                service:
+                  type: string
+                alt_names:
+                  type: array
+                  items: 
+                    type: string
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                      status:
+                        type: string
+                      last_transition_time:
+                        type: string
+                    x-kubernetes-preserve-unknown-fields: true
+          required: ["spec"]
+      subresources:
+        status: {}
+---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -60,12 +121,7 @@ rules:
       - rbac.authorization.k8s.io
       - certificates.k8s.io
     resources:
-      - pods
-      - deployments
-      - persistentvolumes
-      - persistentvolumeclaims
       - serviceaccounts
-      - services
       - secrets
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   - apiGroups:
@@ -80,31 +136,31 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: webhook-helper-cluster-rolebinding
-  namespace: webhook-helper 
+  name: certificate-helper-cluster-rolebinding
+  namespace: certificate-helper 
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: role.webhook-helper.io
+  name: role.certificate-helper.io
 subjects:
-- namespace: webhook-helper 
+- namespace: certificate-helper 
   kind: ServiceAccount
-  name: webhook-helper-service-account
+  name: certificate-helper-service-account
 ---
-apiVersion: certificate-helper.io/v1
-kind: Certificate
+apiVersion: webhook-helper.io/v1
+kind: WebhookHelper
 metadata:
   name: certificate-signing-webhook
 spec: 
   namespace: certificate-helper
-  listening_port: 8080
+  listening_port: 8443
   webhook:
     apiVersion: admissionregistration.k8s.io/v1
     kind: ValidatingWebhookConfiguration
     metadata:
       name: certificate-helper
     webhooks:
-      - name: certificate-helper.default.svc
+      - name: certificate-helper.certificate-helper.svc
         rules:
           - operations: ["CREATE", "UPDATE", "DELETE"]
             apiGroups: ["certificate-helper.io"]
@@ -118,12 +174,14 @@ spec:
     apiVersion: v1
     kind: Pod
     metadata:
-      name: nginx
+      name: certificate-helper
       namespace: certificate-helper
     spec:
       containers:
         - name: bootstrap
-          image: rc1405/webhook-helper:latest
-          args: ["bootstrap", "-n", "webhook-helper"]
+          image: rc1405/k8s-certificate-helper:latest
+          args: ["run", "-p", "8443"]
+          ports: 
+            - containerPort: 8443
       restartPolicy: Never
-      serviceAccountName: webhook-helper-service-account
+      serviceAccountName: certificate-helper-service-account
