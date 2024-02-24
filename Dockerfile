@@ -1,4 +1,4 @@
 FROM ubuntu:latest
-COPY target/release/certificate-helper /bin/certificate-helper
-RUN chmod a+x /bin/certificate-helper
-ENTRYPOINT [ "certificate-helper" ]
+COPY target/release/k8s-certificate /bin/k8s-certificate
+RUN chmod a+x /bin/k8s-certificate
+ENTRYPOINT [ "k8s-certificate" ]
