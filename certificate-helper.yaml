@@ -1,0 +1,129 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: certificate-helper
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: certificate-helper-service-account
+  namespace: certificate-helper
+secrets:
+  - name: "certificate-helper.certificate-helper.svc"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: role.certificate-helper.io
+rules:
+  - apiGroups:
+    - certificates.k8s.io
+    resources:
+    - certificatesigningrequests
+    verbs:
+    - create
+    - get
+    - list
+    - watch
+    - delete
+  - apiGroups:
+    - certificates.k8s.io
+    resources:
+    - certificatesigningrequests/approval
+    verbs:
+    - update
+    - get
+    - delete
+  - apiGroups:
+    - certificates.k8s.io
+    resources:
+    - signers
+    verbs:
+    - approve
+  - apiGroups:
+      - certificate-helper.io
+    resources:
+      - certificates
+      - certificates/status
+    verbs: 
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - ""
+      - apps
+      - rbac.authorization.k8s.io
+      - certificates.k8s.io
+    resources:
+      - pods
+      - deployments
+      - persistentvolumes
+      - persistentvolumeclaims
+      - serviceaccounts
+      - services
+      - secrets
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - get
+    resourceNames:
+      - kube-root-ca.crt
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: webhook-helper-cluster-rolebinding
+  namespace: webhook-helper 
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: role.webhook-helper.io
+subjects:
+- namespace: webhook-helper 
+  kind: ServiceAccount
+  name: webhook-helper-service-account
+---
+apiVersion: certificate-helper.io/v1
+kind: Certificate
+metadata:
+  name: certificate-signing-webhook
+spec: 
+  namespace: certificate-helper
+  listening_port: 8080
+  webhook:
+    apiVersion: admissionregistration.k8s.io/v1
+    kind: ValidatingWebhookConfiguration
+    metadata:
+      name: certificate-helper
+    webhooks:
+      - name: certificate-helper.default.svc
+        rules:
+          - operations: ["CREATE", "UPDATE", "DELETE"]
+            apiGroups: ["certificate-helper.io"]
+            apiVersions: ["v1"]
+            resources: ["certificates"]
+        failurePolicy: Fail
+        admissionReviewVersions: ["v1", "v1beta1"]
+        sideEffects: None
+        timeoutSeconds: 5
+  deployment:
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: nginx
+      namespace: certificate-helper
+    spec:
+      containers:
+        - name: bootstrap
+          image: rc1405/webhook-helper:latest
+          args: ["bootstrap", "-n", "webhook-helper"]
+      restartPolicy: Never
+      serviceAccountName: webhook-helper-service-account
