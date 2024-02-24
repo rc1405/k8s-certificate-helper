@@ -13,9 +13,7 @@ use serde_json::json;
 use std::fmt::Debug;
 
 use crate::controller::Error;
-use crate::crd::{
-    Stage, Certificate, CertificateCondition, CertificateStatus,
-};
+use crate::crd::{Certificate, CertificateCondition, CertificateStatus, Stage};
 use chrono::offset::Utc;
 use chrono::DateTime;
 use k8s_openapi::{ClusterResourceScope, NamespaceResourceScope};
@@ -172,11 +170,11 @@ pub async fn update_status(
     match stage {
         Stage::CreationFailed(_) => {
             condition_entry.status = "False".into();
-        },
+        }
         Stage::CertificateCreated(c) => {
             status.certificate = Some(c);
-        },
-        _ => {},
+        }
+        _ => {}
     };
 
     if let Some(mut v) = status.conditions.clone() {

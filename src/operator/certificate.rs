@@ -13,7 +13,7 @@ use std::collections::BTreeMap;
 use tracing::info;
 
 use crate::controller::Error;
-use crate::crd::{Stage, Certificate as CertificateHelper};
+use crate::crd::{Certificate as CertificateHelper, Stage};
 
 use super::{perform_cluster_operation, perform_operation};
 use super::{perform_get, update_status, Operation};
@@ -30,7 +30,11 @@ pub struct CertificateStage {
 }
 
 impl CertificateStage {
-    pub fn new(client: Client, operation: Operation, certificate: CertificateHelper) -> CertificateStage {
+    pub fn new(
+        client: Client,
+        operation: Operation,
+        certificate: CertificateHelper,
+    ) -> CertificateStage {
         CertificateStage {
             client,
             operation,
@@ -55,9 +59,12 @@ impl CertificateStage {
             Operation::Delete => {
                 if let Some(status) = self.certificate.status.clone() {
                     if let Some(secret) = status.certificate {
-                        let secret: Secret =
-                            perform_get(self.client.clone(), &secret, &self.certificate.spec.namespace)
-                                .await?;
+                        let secret: Secret = perform_get(
+                            self.client.clone(),
+                            &secret,
+                            &self.certificate.spec.namespace,
+                        )
+                        .await?;
                         self.secret = Some(secret);
                     };
                 };
@@ -80,8 +87,7 @@ impl CertificateStage {
 
         if let Some(uid) = self.certificate.uid() {
             if let Some(secret) = self.secret.clone() {
-                perform_operation(self.client.clone(), Operation::ApplyOwner(uid), &secret)
-                    .await?;
+                perform_operation(self.client.clone(), Operation::ApplyOwner(uid), &secret).await?;
             };
         };
         Ok(())
@@ -97,13 +103,18 @@ impl CertificateStage {
             .push(DnType::OrganizationName, "system:nodes");
         params.distinguished_name.push(
             DnType::CommonName,
-            format!("system:node:{}", self.certificate.spec.service.to_lowercase()),
+            format!(
+                "system:node:{}",
+                self.certificate.spec.service.to_lowercase()
+            ),
         );
-        
-        let mut alt_names = vec![SanType::DnsName(self.certificate.spec.service.to_lowercase())];
+
+        let mut alt_names = vec![SanType::DnsName(
+            self.certificate.spec.service.to_lowercase(),
+        )];
         for i in self.certificate.spec.alt_names.clone().unwrap_or_default() {
             alt_names.push(SanType::DnsName(i));
-        };
+        }
 
         params.subject_alt_names = alt_names;
         self.cert = Some(Certificate::from_params(params)?);
@@ -206,7 +217,10 @@ impl CertificateStage {
         data.insert("tls.crt".into(), cert);
 
         let secret = Secret {
-            type_: Some(format!("{}/tls", self.certificate.name_any().to_lowercase())),
+            type_: Some(format!(
+                "{}/tls",
+                self.certificate.name_any().to_lowercase()
+            )),
             metadata: ObjectMeta {
                 name: Some(self.certificate.name_any().to_lowercase().to_string()),
                 namespace: Some(self.certificate.spec.namespace.clone()),
@@ -219,7 +233,10 @@ impl CertificateStage {
         let result = perform_operation(self.client.clone(), Operation::Create, &secret).await?;
         self.secret = Some(result);
 
-        info!("Secret {} created", self.certificate.name_any().to_lowercase());
+        info!(
+            "Secret {} created",
+            self.certificate.name_any().to_lowercase()
+        );
         Ok(())
     }
 

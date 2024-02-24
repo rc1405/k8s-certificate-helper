@@ -11,10 +11,8 @@ use tracing::{error, info, warn};
 use futures::StreamExt;
 use kube::runtime::{controller::Controller, watcher, Config};
 
-use crate::crd::{Stage, Certificate};
-use crate::operator::{
-    determine_stage, CertificateStage, Operation,
-};
+use crate::crd::{Certificate, Stage};
+use crate::operator::{determine_stage, CertificateStage, Operation};
 
 #[derive(Debug, Error)]
 pub enum Error {
