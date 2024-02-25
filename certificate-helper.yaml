@@ -193,6 +193,5 @@ spec:
             - name: bootstrap
               image: rc1405/k8s-certificate-helper:latest
               args: ["run", "-p", "8443"]
-              imagePullPolicy: Never
               ports: 
                 - containerPort: 8443
