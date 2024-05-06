@@ -12,7 +12,7 @@ futures = "0.3.30"
 http = "0.2.5"
 k8s-openapi = { version = "0.21.1", features = ["latest"] }
 kube = { version = "0.88.1", features = ["runtime", "derive", "admission"] }
-kube-derive = "0.88.1"
+kube-derive = "0.91.0"
 rcgen = "0.12.1"
 schemars = "0.8.16"
 serde = { version = "1.0.197", features = ["derive"] }
