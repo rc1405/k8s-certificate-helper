@@ -42,7 +42,7 @@ jobs:
       
       - name: Extract metadata (tags, labels) for Docker
         id: meta
-        uses: docker/metadata-action@f7b4ed12385588c3f9bc252f0a2b520d83b52d48
+        uses: docker/metadata-action@de1119515dcfb4b110f21f67dc739b3ba1472a84
         with:
           images: rc1405/k8s-certificate-helper
       
